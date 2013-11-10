@@ -2,34 +2,51 @@ require 'rspec'
 require 'net/http'
 require 'socket'
 
-describe 'wrack' do
+class FunRun
+  def initialize(command)
+    @command = command
+    @output = StringIO.new
+  end
+  def start(options={}, &started_check)
+    check_period = options[:check_period] || 0.1
+    output = options[:output] || @output
+    output.print 'starting...'
+    @pid = Kernel.spawn(@command)
+    if started_check
+      until call(&started_check) do
+        output.print '.'
+        sleep check_period
+      end
+    end
+    output.puts "ok (#{@pid})"
+    self
+  end
+  def stop
+    Process.kill 'KILL', @pid
+    Process.wait @pid
+  end
 
-  def server_up
+  private
+  def call(&block)
     begin
-      print 'connecting...'
-      TCPSocket.new('localhost', 8080).close
-      puts 'ok'
-      true
+      block.call
     rescue
-      puts 'barf!'
       false
     end
   end
+end
+
+describe 'wrack' do
 
   before :all do
-    @website = Kernel.spawn 'rackup'
-    until server_up do
-      sleep 0.2
+    @website = FunRun.new('rackup').start output: $stdout do
+      TCPSocket.new('localhost', 8080).close
+      true
     end
-    puts "spawned website pid: #{@website}"
   end
 
   after :all do
-    puts "killing website pid: #{@website}"
-    Process.kill 'KILL', @website
-    puts "waiting for website pid: #{@website}"
-    Process.wait @website
-    puts "waited for website pid: #{@website}"
+    @website.stop
   end
 
   it 'should say hello' do
