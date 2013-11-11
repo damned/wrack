@@ -10,6 +10,7 @@ class FunRun
   def start(options={}, &started_check)
     check_period = options[:check_period] || 0.1
     output = options[:output] || @output
+
     output.print 'starting...'
     @pid = Kernel.spawn(@command)
     if started_check
@@ -25,11 +26,14 @@ class FunRun
     Process.kill 'KILL', @pid
     Process.wait @pid
   end
-
+  def tcp_check(port)
+    TCPSocket.new('localhost', port).close
+    true
+  end
   private
   def call(&block)
     begin
-      block.call
+      instance_eval(&block)
     rescue
       false
     end
@@ -39,9 +43,8 @@ end
 describe 'wrack' do
 
   before :all do
-    @website = FunRun.new('rackup').start output: $stdout do
-      TCPSocket.new('localhost', 8080).close
-      true
+    @website = FunRun.new('rackup').start do
+      tcp_check 8080
     end
   end
 
