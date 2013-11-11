@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'wrack'
-  s.version = "0.0.2"
+  s.version = "0.0.3"
   s.date = '2013-08-22'
   s.authors = 'damned'
   s.summary = 'webserver using rack'
@@ -10,5 +10,6 @@ Gem::Specification.new do |s|
   ]
   s.add_dependency 'rack'
   s.add_dependency 'thin'
+  s.add_development_dependency 'rspec'
 end
 
